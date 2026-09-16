@@ -1,0 +1,54 @@
+:root {
+  --ink: #1b1a17;
+  --muted: #6f6a60;
+  --line: #e2ddd3;
+  --paper: #faf8f4;
+  --card: #ffffff;
+  --accent: #7a5c3e;
+  --locked: #b0aaa0;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ink: #f0ece4; --muted: #a49d91; --line: #34302a;
+    --paper: #171613; --card: #201e1a; --accent: #c9a07a; --locked: #5c5750;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--paper); color: var(--ink);
+  font: 15px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+.wrap { max-width: 860px; margin: 0 auto; padding: 32px 20px 64px; }
+h1 { font-size: 26px; margin: 0 0 4px; letter-spacing: -0.01em; }
+.sub { color: var(--muted); margin: 0 0 28px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; }
+input[type="search"], input[type="text"] {
+  flex: 1 1 220px; padding: 10px 12px; border: 1px solid var(--line);
+  border-radius: 8px; background: var(--card); color: var(--ink); font: inherit;
+}
+button {
+  padding: 10px 16px; border: 1px solid var(--accent); border-radius: 8px;
+  background: var(--accent); color: #fff; font: inherit; cursor: pointer;
+}
+button:disabled { opacity: .55; cursor: default; }
+.list { display: grid; gap: 10px; margin-top: 20px; }
+.card {
+  border: 1px solid var(--line); border-radius: 10px; background: var(--card);
+  padding: 14px 16px; text-decoration: none; color: inherit; display: block;
+}
+.name { font-weight: 600; }
+.meta { color: var(--muted); font-size: 13px; margin-top: 2px; }
+.tag {
+  display: inline-block; font-size: 11px; letter-spacing: .04em;
+  text-transform: uppercase; padding: 2px 7px; border-radius: 999px;
+  border: 1px solid var(--line); color: var(--muted); margin-left: 6px;
+}
+.locked { color: var(--locked); font-style: italic; }
+.empty { color: var(--muted); padding: 24px 0; }
+.err { color: #a8342a; margin-top: 12px; }
+.note {
+  margin-top: 28px; padding: 14px 16px; border-left: 3px solid var(--accent);
+  background: var(--card); border-radius: 0 8px 8px 0; color: var(--muted); font-size: 13.5px;
+}
+a { color: var(--accent); }

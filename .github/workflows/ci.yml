@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    name: Typecheck, test & build
+    runs-on: ubuntu-latest
+
+    # The migration step applies the schema for real, so it needs a live
+    # Postgres. Reached over localhost: the steps run on the runner host.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ci
+        ports:
+          - 5432:5432
+        # Without this the migration can start before Postgres accepts
+        # connections and fail on connection refused, which reads as a
+        # migration bug and isn't.
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies (all workspaces)
+        run: npm ci
+
+      - name: Prisma generate
+        run: npm run db:generate -w server
+
+      - name: Privacy gate tests
+        run: npm test -w server
+
+      - name: Typecheck server
+        run: npm run lint -w server
+
+      - name: Typecheck client
+        run: npm run lint -w client
+
+      - name: Verify migrations apply cleanly
+        working-directory: server
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ci
+        run: npx prisma migrate deploy
+
+      - name: Build server
+        run: npm run build -w server
+
+      - name: Build client
+        run: npm run build -w client
