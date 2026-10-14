@@ -4,6 +4,7 @@ import { prisma } from "../lib/prisma";
 import { buildViewer } from "../lib/graph";
 import { requireAuth } from "../middleware/auth.middleware";
 import { isSearchable, projectPerson } from "../lib/visibility";
+import { dedupeEdges, MAX_WEB_NODES } from "../lib/web";
 
 export const peopleRouter = Router();
 
@@ -76,7 +77,7 @@ peopleRouter.get("/:id/web", async (req, res, next) => {
       for (const r of rels) {
         edges.push({ a: r.personAId, b: r.personBId, type: r.type, confirmed: r.confirmed });
         for (const id of [r.personAId, r.personBId]) {
-          if (!seen.has(id)) { seen.add(id); next.push(id); }
+          if (!seen.has(id) && seen.size < MAX_WEB_NODES) { seen.add(id); next.push(id); }
         }
       }
       frontier = next;
@@ -85,7 +86,8 @@ peopleRouter.get("/:id/web", async (req, res, next) => {
     const people = await prisma.person.findMany({ where: { id: { in: [...seen] } } });
     res.json({
       nodes: people.map((p) => projectPerson(p, viewer)),
-      edges: [...new Map(edges.map((e) => [`${e.a}:${e.b}:${e.type}`, e])).values()],
+      // Drop edges whose far end was cut off by the node cap.
+      edges: dedupeEdges(edges).filter((e) => seen.has(e.a) && seen.has(e.b)),
     });
   } catch (err) { next(err); }
 });
