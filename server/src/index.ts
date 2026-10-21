@@ -11,6 +11,9 @@ import { erasureRouter } from "./routes/erasure.routes";
 
 const app = express();
 
+// Behind a proxy in production; makes req.ip (used for rate limiting) the real client address.
+if (env.isProduction) app.set("trust proxy", 1);
+
 app.use(helmet());
 app.use(cors({ origin: env.clientOrigin, credentials: true }));
 app.use(express.json({ limit: "1mb" }));

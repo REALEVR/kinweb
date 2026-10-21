@@ -1,9 +1,13 @@
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
+import { rateLimit } from "../middleware/rateLimit.middleware";
 import { hashPassword, signToken, verifyPassword } from "../lib/auth";
 
 export const authRouter = Router();
+
+// Brute-force guard on the credential endpoints: 10 attempts per IP per 15 minutes.
+const credentialLimit = rateLimit({ max: 10, windowMs: 15 * 60_000 });
 
 const credentials = z.object({
   email: z.string().email(),
@@ -11,7 +15,7 @@ const credentials = z.object({
   displayName: z.string().min(1).max(80).optional(),
 });
 
-authRouter.post("/register", async (req, res, next) => {
+authRouter.post("/register", credentialLimit, async (req, res, next) => {
   try {
     const body = credentials.parse(req.body);
     const existing = await prisma.user.findUnique({ where: { email: body.email } });
@@ -29,7 +33,7 @@ authRouter.post("/register", async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-authRouter.post("/login", async (req, res, next) => {
+authRouter.post("/login", credentialLimit, async (req, res, next) => {
   try {
     const body = credentials.pick({ email: true, password: true }).parse(req.body);
     const user = await prisma.user.findUnique({ where: { email: body.email } });
