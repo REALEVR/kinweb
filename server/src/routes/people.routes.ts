@@ -44,12 +44,29 @@ peopleRouter.get("/search", async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/** The profiles the signed-in user has claimed as themselves. */
+peopleRouter.get("/mine", requireAuth, async (req, res, next) => {
+  try {
+    const mine = await prisma.person.findMany({
+      where: { claimedByUserId: req.userId! },
+      orderBy: { createdAt: "asc" },
+    });
+    const viewer = await buildViewer(req.userId!);
+    res.json({ people: mine.map((p) => projectPerson(p, viewer)) });
+  } catch (err) { next(err); }
+});
+
 peopleRouter.get("/:id", async (req, res, next) => {
   try {
     const person = await prisma.person.findUnique({ where: { id: req.params.id } });
     if (!person) return res.status(404).json({ error: "No such profile." });
     const viewer = await buildViewer(req.userId ?? null);
-    res.json({ person: projectPerson(person, viewer) });
+    const isMine = !!req.userId && person.claimedByUserId === req.userId && !person.lockedAt;
+    res.json({
+      person: projectPerson(person, viewer),
+      // Only the claimant learns the stored tier — it is theirs to change.
+      ...(isMine ? { mine: true, privacyTier: person.privacyTier } : { mine: false }),
+    });
   } catch (err) { next(err); }
 });
 

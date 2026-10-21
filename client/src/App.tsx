@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, type PersonView } from "./lib/api";
+import { useAuth } from "./lib/auth";
 
 export function App() {
   const [q, setQ] = useState("");
   const [results, setResults] = useState<PersonView[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [searched, setSearched] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
     if (q.trim().length < 2) { setResults([]); setSearched(false); return; }
@@ -17,12 +19,27 @@ export function App() {
         .catch((e: Error) => setError(e.message));
     }, 250);
     return () => clearTimeout(t);
-  }, [q]);
+  }, [q, user?.id]);
 
   return (
-    <div className="wrap">
-      <h1>Kinweb</h1>
-      <p className="sub">One shared family web, built one true connection at a time.</p>
+    <>
+      <section className="hero">
+        <h1>One shared family web,<br />built one true connection at a time.</h1>
+        <p className="sub">
+          Add yourself, connect your parents, children and siblings, and watch your family
+          tree grow — with privacy that protects the living.
+        </p>
+        {!user && (
+          <div className="hero-actions">
+            <Link to="/signin" className="btn">Start your family web</Link>
+          </div>
+        )}
+        {user && (
+          <div className="hero-actions">
+            <Link to="/me" className="btn">Go to my family</Link>
+          </div>
+        )}
+      </section>
 
       <div className="row">
         <input
@@ -30,7 +47,7 @@ export function App() {
           type="search"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search by name…"
+          placeholder="Search for a relative by name…"
           aria-label="Search for a person by name"
         />
       </div>
@@ -50,7 +67,7 @@ export function App() {
         default to family-only, profiles of under-18s are never searchable by anyone,
         and a profile whose subject has asked to be removed shows nothing at all.
       </p>
-    </div>
+    </>
   );
 }
 
