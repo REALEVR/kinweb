@@ -17,6 +17,9 @@ app.use(express.json({ limit: "1mb" }));
 app.use(cookieParser());
 app.use(withUser);
 
+app.get("/", (_req, res) =>
+  res.json({ name: "Kinweb API", ok: true, docs: "This is the API. The app lives at the client URL; endpoints are under /api." })
+);
 app.get("/api/health", (_req, res) => res.json({ ok: true }));
 app.use("/api/auth", authRouter);
 app.use("/api/people", peopleRouter);
