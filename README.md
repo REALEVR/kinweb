@@ -29,7 +29,7 @@ Two decisions worth knowing about, both deliberately conservative:
 - **Unknown birth year is not treated as adult.** We cannot prove a living person with no recorded birth year is over 18, so they cannot go public. The cost is that a claimant supplies a birth year before opting in; deceased profiles — the main genealogical value — are unaffected.
 - **Erasure locks first, adjudicates second.** A wrongly-locked node is a reversible inconvenience; a slowly-locked one exposes someone who asked not to be listed.
 
-`npm test -w server` covers all of the above — 19 cases.
+`npm test -w server` covers all of the above, plus the API error contract (bad JSON → 400, oversized body → 413, unknown route → JSON 404) — 24 cases.
 
 ## Stack
 

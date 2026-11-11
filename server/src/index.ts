@@ -4,7 +4,7 @@ import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import { env } from "./lib/env";
 import { withUser } from "./middleware/auth.middleware";
-import { errorHandler } from "./middleware/error.middleware";
+import { errorHandler, notFoundHandler } from "./middleware/error.middleware";
 import { authRouter } from "./routes/auth.routes";
 import { peopleRouter } from "./routes/people.routes";
 import { erasureRouter } from "./routes/erasure.routes";
@@ -24,6 +24,10 @@ app.get("/api/health", (_req, res) => res.json({ ok: true }));
 app.use("/api/auth", authRouter);
 app.use("/api/people", peopleRouter);
 app.use("/api/erasure", erasureRouter);
+
+// Unknown /api paths get JSON, not Express's default HTML "Cannot GET" page,
+// so the client's fetch wrapper can surface a readable error.
+app.use("/api", notFoundHandler);
 
 app.use(errorHandler);
 
