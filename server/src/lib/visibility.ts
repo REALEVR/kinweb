@@ -76,6 +76,15 @@ export function isLocked(p: Pick<PersonRecord, "privacyTier" | "lockedAt">): boo
 }
 
 /**
+ * Whether new relatives may be attached to this profile. A locked node is one
+ * whose subject asked to be erased; adding edges to it would rebuild the very
+ * context the erasure removed, so it is closed to new links.
+ */
+export function acceptsNewRelatives(p: Pick<PersonRecord, "privacyTier" | "lockedAt">): boolean {
+  return !isLocked(p);
+}
+
+/**
  * Whether this profile is allowed to be PUBLIC at all, regardless of what the
  * stored tier says. Enforced on read as well as on write, so a row that somehow
  * reaches PUBLIC — a bad migration, a direct DB edit, a future bug — still does

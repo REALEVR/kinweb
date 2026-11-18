@@ -3,7 +3,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { buildViewer } from "../lib/graph";
 import { requireAuth } from "../middleware/auth.middleware";
-import { isSearchable, projectPerson } from "../lib/visibility";
+import { acceptsNewRelatives, isSearchable, projectPerson } from "../lib/visibility";
 
 export const peopleRouter = Router();
 
@@ -142,37 +142,48 @@ peopleRouter.post("/:id/relatives", requireAuth, async (req, res, next) => {
 
     const anchor = await prisma.person.findUnique({ where: { id: req.params.id } });
     if (!anchor) return res.status(404).json({ error: "No such profile." });
-
-    const relative = await prisma.person.create({
-      data: { ...fields, addedByUserId: req.userId! },
-    });
+    // An erased (locked) node must not keep growing new edges: each new
+    // relative would re-expose the person who asked to be removed.
+    if (!acceptsNewRelatives(anchor)) {
+      return res.status(409).json({ error: "This profile is locked and can't have relatives added." });
+    }
 
     // PARENT is directional: personA is the parent of personB.
-    const [personAId, personBId] =
-      direction === "FROM" ? [anchor.id, relative.id] : [relative.id, anchor.id];
-
-    await prisma.relationship.create({
-      data: { personAId, personBId, type, addedByUserId: req.userId! },
-    });
-
-    // Likely duplicates already in the graph, surfaced for a human to judge.
-    const possibleDuplicates = await prisma.person.findMany({
-      where: {
-        displayName: { equals: relative.displayName, mode: "insensitive" },
-        id: { not: relative.id },
-        lockedAt: null,
-      },
-      take: 5,
-    });
-
-    for (const dup of possibleDuplicates) {
-      const [a, b] = [relative.id, dup.id].sort();
-      await prisma.mergeSuggestion.upsert({
-        where: { personAId_personBId: { personAId: a, personBId: b } },
-        update: {},
-        create: { personAId: a, personBId: b, matchScore: 0.5 },
+    // The person and their edge are written together so a failed edge never
+    // leaves an orphaned, unconnected profile behind.
+    const { relative, possibleDuplicates } = await prisma.$transaction(async (tx) => {
+      const created = await tx.person.create({
+        data: { ...fields, addedByUserId: req.userId! },
       });
-    }
+
+      const [personAId, personBId] =
+        direction === "FROM" ? [anchor.id, created.id] : [created.id, anchor.id];
+
+      await tx.relationship.create({
+        data: { personAId, personBId, type, addedByUserId: req.userId! },
+      });
+
+      // Likely duplicates already in the graph, surfaced for a human to judge.
+      const dups = await tx.person.findMany({
+        where: {
+          displayName: { equals: created.displayName, mode: "insensitive" },
+          id: { not: created.id },
+          lockedAt: null,
+        },
+        take: 5,
+      });
+
+      for (const dup of dups) {
+        const [a, b] = [created.id, dup.id].sort();
+        await tx.mergeSuggestion.upsert({
+          where: { personAId_personBId: { personAId: a, personBId: b } },
+          update: {},
+          create: { personAId: a, personBId: b, matchScore: 0.5 },
+        });
+      }
+
+      return { relative: created, possibleDuplicates: dups };
+    });
 
     const viewer = await buildViewer(req.userId!);
     res.status(201).json({

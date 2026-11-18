@@ -2,6 +2,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
   ANONYMOUS,
+  acceptsNewRelatives,
   effectiveTier,
   isKnownAdult,
   isKnownMinor,
@@ -131,6 +132,15 @@ describe("locked (erasure honoured) nodes", () => {
   it("is never public and never searchable", () => {
     assert.equal(effectiveTier(locked, NOW), "LOCKED");
     assert.equal(isSearchable(locked, family(["p1"]), NOW), false);
+  });
+
+  it("refuses new relatives whether locked by timestamp or by tier", () => {
+    assert.equal(acceptsNewRelatives(locked), false);
+    assert.equal(acceptsNewRelatives(person({ privacyTier: "LOCKED" })), false);
+  });
+
+  it("accepts new relatives on an open profile", () => {
+    assert.equal(acceptsNewRelatives(person()), true);
   });
 });
 
