@@ -8,6 +8,7 @@ import { errorHandler } from "./middleware/error.middleware";
 import { authRouter } from "./routes/auth.routes";
 import { peopleRouter } from "./routes/people.routes";
 import { erasureRouter } from "./routes/erasure.routes";
+import { claimsRouter } from "./routes/claims.routes";
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.get("/api/health", (_req, res) => res.json({ ok: true }));
 app.use("/api/auth", authRouter);
 app.use("/api/people", peopleRouter);
 app.use("/api/erasure", erasureRouter);
+app.use("/api/claims", claimsRouter);
 
 app.use(errorHandler);
 

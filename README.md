@@ -20,6 +20,7 @@ The brief calls privacy "the load-bearing wall", so it is built as one. Every re
 | Under-18s are **never** public and **never** searchable — by anyone, including family | `isKnownMinor`, `isSearchable` |
 | A minor's photo needs a guardian account attached | `mayShowPhoto` |
 | Anyone can request lockdown **without an account** | `POST /api/erasure` |
+| Claiming a profile is a **request for review**, never self-served; locked profiles can't be claimed | `POST /api/claims`, `claimRefusal` |
 | A locked node discloses nothing but keeps its edges | `projectPerson` |
 | Cause-of-death stays freeform text, never structured health data | `Person.deceasedNotes` |
 | Merge suggestions are surfaced, never auto-applied | `MergeSuggestion.status` |
